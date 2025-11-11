@@ -1,0 +1,25 @@
+{{- if .Values.sidekiq.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kodecd.fullname" . }}-sidekiq
+  labels:
+    {{- include "kodecd.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sidekiq
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kodecd.fullname" . }}-sidekiq
+  minReplicas: {{ .Values.sidekiq.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.sidekiq.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.sidekiq.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.sidekiq.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+{{- end }}

@@ -1,0 +1,304 @@
+# Production values for KodeCD Helm Chart
+# This is an example configuration for production deployments
+
+global:
+  domain: kodecd.example.com
+  protocol: https
+
+# Production-ready image configuration
+image:
+  repository: kodecd/kodecd
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"  # Use specific version in production
+
+# Secrets - MUST be set before deploying
+# Generate with: openssl rand -hex 64
+secrets:
+  secretKeyBase: ""  # REQUIRED: Set this!
+  runnerToken: ""    # REQUIRED: Set this!
+  # Or use existing secret:
+  # existingSecret: "kodecd-secrets"
+
+# Web service - Multiple replicas with auto-scaling
+web:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 75
+
+# Sidekiq - Background jobs with auto-scaling
+sidekiq:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 75
+
+# Runner configuration
+runner:
+  name: k8s-runner-production
+  concurrentJobs: 8
+  executor: kubernetes
+  resources:
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+
+# PostgreSQL - Production configuration
+postgresql:
+  enabled: true
+  auth:
+    username: kodecd
+    password: ""  # REQUIRED: Set a secure password!
+    database: kodecd_production
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: "fast-ssd"  # Use fast storage
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+    # Backup configuration
+    initdb:
+      scripts:
+        backup.sh: |
+          #!/bin/bash
+          # Add custom initialization scripts
+    # Enable PgBouncer for connection pooling
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+
+# Redis - Production configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: ""  # REQUIRED: Set a secure password!
+  master:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "fast-ssd"
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+  replica:
+    replicaCount: 2  # Redis replicas for HA
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+# Persistent storage - Large sizes for production
+persistence:
+  storageClass: "fast-ssd"
+  gitData:
+    enabled: true
+    size: 500Gi
+    accessMode: ReadWriteOnce
+  artifacts:
+    enabled: true
+    size: 1Ti
+    accessMode: ReadWriteOnce
+  cache:
+    enabled: true
+    size: 200Gi
+    accessMode: ReadWriteOnce
+  storage:
+    enabled: true
+    size: 100Gi
+    accessMode: ReadWriteOnce
+  runnerCache:
+    enabled: true
+    size: 200Gi
+    accessMode: ReadWriteOnce
+
+# Ingress - Production with SSL
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    # SSL/TLS
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Security headers
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    # Performance
+    nginx.ingress.kubernetes.io/proxy-body-size: "512m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    # CORS (if needed)
+    # nginx.ingress.kubernetes.io/enable-cors: "true"
+  hosts:
+    - host: kodecd.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: kodecd-tls
+      hosts:
+        - kodecd.example.com
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  # For LoadBalancer type:
+  # type: LoadBalancer
+  # annotations:
+  #   service.beta.kubernetes.io/aws-load-balancer-type: nlb
+
+# Application configuration
+config:
+  railsEnv: production
+  logLevel: info
+
+  # SMTP for email notifications
+  smtp:
+    enabled: true
+    address: smtp.sendgrid.net
+    port: 587
+    username: apikey
+    password: ""  # Set your SMTP password
+    domain: example.com
+    authMethod: plain
+    enableStarttlsAuto: true
+
+  # Feature flags
+  features:
+    teamsEnabled: true
+    wikiEnabled: true
+    registrationEnabled: false  # Disable public registration in production
+
+# Security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Pod Disruption Budget for high availability
+podDisruptionBudget:
+  web:
+    enabled: true
+    minAvailable: 2
+  sidekiq:
+    enabled: true
+    minAvailable: 1
+
+# Node affinity - spread across availability zones
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - kodecd
+          topologyKey: topology.kubernetes.io/zone
+
+# Resource quotas and limits
+nodeSelector:
+  node.kubernetes.io/instance-type: m5.xlarge
+
+# Tolerations for dedicated nodes
+tolerations: []
+# - key: "workload"
+#   operator: "Equal"
+#   value: "kodecd"
+#   effect: "NoSchedule"
+
+# Health checks - Production tuned
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 90
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 45
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Service Account with IAM roles (AWS)
+serviceAccount:
+  create: true
+  annotations:
+    # For AWS IAM roles
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/kodecd-role
+    # For GCP Workload Identity
+    # iam.gke.io/gcp-service-account: kodecd@PROJECT_ID.iam.gserviceaccount.com
+  name: kodecd
+
+# Pod annotations for monitoring
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "3000"
+  prometheus.io/path: "/metrics"
+
+# Init containers enabled for migrations
+initContainers:
+  enabled: true

@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kodecd.fullname" . }}-config
+  labels:
+    {{- include "kodecd.labels" . | nindent 4 }}
+data:
+  RAILS_ENV: {{ .Values.config.railsEnv | quote }}
+  RAILS_SERVE_STATIC_FILES: "true"
+  RAILS_LOG_TO_STDOUT: "true"
+  EXTERNAL_URL: {{ include "kodecd.externalUrl" . | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+
+  # Feature flags
+  FEATURES_TEAMS_ENABLED: {{ .Values.config.features.teamsEnabled | quote }}
+  FEATURES_WIKI_ENABLED: {{ .Values.config.features.wikiEnabled | quote }}
+  FEATURES_REGISTRATION_ENABLED: {{ .Values.config.features.registrationEnabled | quote }}
+
+  # Storage paths
+  GIT_DATA_DIR: "/var/opt/kodecd/git-data"
+  ARTIFACTS_DIR: "/var/opt/kodecd/artifacts"
+  CACHE_DIR: "/var/opt/kodecd/cache"
+  STORAGE_DIR: "/var/opt/kodecd/storage"
+
+  {{- if .Values.config.smtp.enabled }}
+  # SMTP configuration
+  SMTP_ENABLED: "true"
+  SMTP_ADDRESS: {{ .Values.config.smtp.address | quote }}
+  SMTP_PORT: {{ .Values.config.smtp.port | quote }}
+  SMTP_USERNAME: {{ .Values.config.smtp.username | quote }}
+  SMTP_DOMAIN: {{ .Values.config.smtp.domain | quote }}
+  SMTP_AUTHENTICATION: {{ .Values.config.smtp.authMethod | quote }}
+  SMTP_ENABLE_STARTTLS_AUTO: {{ .Values.config.smtp.enableStarttlsAuto | quote }}
+  {{- end }}

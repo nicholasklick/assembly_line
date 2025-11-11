@@ -1,0 +1,19 @@
+apiVersion: v2
+name: kodecd
+description: A Helm chart for KodeCD - Complete CI/CD Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - ci-cd
+  - continuous-integration
+  - continuous-deployment
+  - devops
+  - gitlab-alternative
+home: https://kodecd.com
+sources:
+  - https://github.com/yourusername/kodecd
+maintainers:
+  - name: KodeCD Team
+    email: support@kodecd.com
+icon: https://kodecd.com/assets/logo.png

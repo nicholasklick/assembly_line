@@ -1,0 +1,270 @@
+# Default values for kodecd
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  # Domain for KodeCD installation
+  domain: kodecd.example.com
+  # Protocol (http or https)
+  protocol: https
+
+# Image configuration
+image:
+  # Repository for web and sidekiq images
+  repository: kodecd/kodecd
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# Runner image configuration
+runner:
+  image:
+    repository: kodecd/runner
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  # Number of concurrent jobs
+  concurrentJobs: 4
+  # Runner executor type (docker, kubernetes, shell)
+  executor: kubernetes
+  # Runner name
+  name: k8s-runner-1
+  # Resource limits for runner
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+# Web service (Rails/Puma)
+web:
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+# Sidekiq background jobs
+sidekiq:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+
+# PostgreSQL database
+postgresql:
+  # Enable built-in PostgreSQL (set to false to use external database)
+  enabled: true
+  auth:
+    username: kodecd
+    password: ""  # Set via secret or generate random
+    database: kodecd_production
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""  # Use default storage class
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+  # External database configuration (used when enabled: false)
+  external:
+    host: ""
+    port: 5432
+    username: kodecd
+    password: ""
+    database: kodecd_production
+
+# Redis cache and queue
+redis:
+  # Enable built-in Redis (set to false to use external Redis)
+  enabled: true
+  auth:
+    enabled: true
+    password: ""  # Set via secret or generate random
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+      storageClass: ""  # Use default storage class
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  # External Redis configuration (used when enabled: false)
+  external:
+    host: ""
+    port: 6379
+    password: ""
+
+# Persistent storage
+persistence:
+  # Storage class for all PVCs
+  storageClass: ""
+  # Git repositories storage
+  gitData:
+    enabled: true
+    size: 50Gi
+    accessMode: ReadWriteOnce
+  # Build artifacts storage
+  artifacts:
+    enabled: true
+    size: 100Gi
+    accessMode: ReadWriteOnce
+  # Cache storage
+  cache:
+    enabled: true
+    size: 50Gi
+    accessMode: ReadWriteOnce
+  # Active Storage (uploads, avatars, etc)
+  storage:
+    enabled: true
+    size: 20Gi
+    accessMode: ReadWriteOnce
+  # Runner cache
+  runnerCache:
+    enabled: true
+    size: 50Gi
+    accessMode: ReadWriteOnce
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "512m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+  hosts:
+    - host: kodecd.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: kodecd-tls
+      hosts:
+        - kodecd.example.com
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+# Security and secrets
+secrets:
+  # Rails secret key base (required)
+  # Generate with: openssl rand -hex 64
+  secretKeyBase: ""
+  # Runner registration token (required)
+  # Generate with: openssl rand -hex 32
+  runnerToken: ""
+  # Create from existing secret instead
+  existingSecret: ""
+
+# Configuration
+config:
+  # Rails environment
+  railsEnv: production
+  # External URL (auto-generated from global.domain and global.protocol if not set)
+  externalUrl: ""
+  # SMTP configuration
+  smtp:
+    enabled: false
+    address: smtp.gmail.com
+    port: 587
+    username: ""
+    password: ""
+    domain: ""
+    authMethod: plain
+    enableStarttlsAuto: true
+  # Feature flags
+  features:
+    teamsEnabled: true
+    wikiEnabled: true
+    registrationEnabled: true
+  # Log level
+  logLevel: info
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Init containers (for migrations)
+initContainers:
+  enabled: true
+
+# Health checks
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3

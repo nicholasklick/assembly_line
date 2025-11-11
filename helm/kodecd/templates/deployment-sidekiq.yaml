@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kodecd.fullname" . }}-sidekiq
+  labels:
+    {{- include "kodecd.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sidekiq
+spec:
+  {{- if not .Values.sidekiq.autoscaling.enabled }}
+  replicas: {{ .Values.sidekiq.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kodecd.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: sidekiq
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "kodecd.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: sidekiq
+    spec:
+      serviceAccountName: {{ include "kodecd.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: sidekiq
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - bundle
+            - exec
+            - sidekiq
+            - -C
+            - config/sidekiq.yml
+          envFrom:
+            - configMapRef:
+                name: {{ include "kodecd.fullname" . }}-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kodecd.fullname" . }}-secret
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kodecd.fullname" . }}-secret
+                  key: redis-url
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kodecd.fullname" . }}-secret
+                  key: secret-key-base
+            {{- if .Values.config.smtp.enabled }}
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kodecd.fullname" . }}-secret
+                  key: smtp-password
+            {{- end }}
+          resources:
+            {{- toYaml .Values.sidekiq.resources | nindent 12 }}
+          volumeMounts:
+            - name: git-data
+              mountPath: /var/opt/kodecd/git-data
+            - name: artifacts
+              mountPath: /var/opt/kodecd/artifacts
+            - name: cache
+              mountPath: /var/opt/kodecd/cache
+            - name: storage
+              mountPath: /var/opt/kodecd/storage
+      volumes:
+        - name: git-data
+          persistentVolumeClaim:
+            claimName: {{ include "kodecd.fullname" . }}-git-data
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: {{ include "kodecd.fullname" . }}-artifacts
+        - name: cache
+          persistentVolumeClaim:
+            claimName: {{ include "kodecd.fullname" . }}-cache
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ include "kodecd.fullname" . }}-storage
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

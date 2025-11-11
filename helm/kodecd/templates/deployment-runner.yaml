@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kodecd.fullname" . }}-runner
+  labels:
+    {{- include "kodecd.labels" . | nindent 4 }}
+    app.kubernetes.io/component: runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "kodecd.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: runner
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "kodecd.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: runner
+    spec:
+      serviceAccountName: {{ include "kodecd.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: runner
+          image: "{{ .Values.runner.image.repository }}:{{ .Values.runner.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.runner.image.pullPolicy }}
+          env:
+            - name: KODECD_URL
+              value: "http://{{ include "kodecd.fullname" . }}-web:3000"
+            - name: RUNNER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kodecd.fullname" . }}-secret
+                  key: runner-token
+            - name: RUNNER_NAME
+              value: {{ .Values.runner.name }}
+            - name: RUNNER_EXECUTOR
+              value: {{ .Values.runner.executor }}
+            - name: RUNNER_CONCURRENT_JOBS
+              value: {{ .Values.runner.concurrentJobs | quote }}
+          resources:
+            {{- toYaml .Values.runner.resources | nindent 12 }}
+          volumeMounts:
+            - name: runner-cache
+              mountPath: /cache
+      volumes:
+        - name: runner-cache
+          persistentVolumeClaim:
+            claimName: {{ include "kodecd.fullname" . }}-runner-cache
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

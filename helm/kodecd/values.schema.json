@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["secrets"],
+  "properties": {
+    "global": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string",
+          "description": "Domain for KodeCD installation"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": ["http", "https"],
+          "description": "Protocol to use"
+        }
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "properties": {
+        "secretKeyBase": {
+          "type": "string",
+          "minLength": 64,
+          "description": "Rails secret key base (generate with: openssl rand -hex 64)"
+        },
+        "runnerToken": {
+          "type": "string",
+          "minLength": 32,
+          "description": "Runner registration token (generate with: openssl rand -hex 32)"
+        }
+      }
+    },
+    "postgresql": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable built-in PostgreSQL"
+        },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "username": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string",
+              "minLength": 8
+            },
+            "database": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "redis": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable built-in Redis"
+        },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "password": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "properties": {
+        "storageClass": {
+          "type": "string",
+          "description": "Storage class for all PVCs"
+        }
+      }
+    }
+  }
+}

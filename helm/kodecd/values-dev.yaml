@@ -1,0 +1,193 @@
+# Development values for KodeCD Helm Chart
+# Minimal configuration for local testing and development
+
+global:
+  domain: localhost
+  protocol: http
+
+# Use specific image tags for development
+image:
+  repository: kodecd/kodecd
+  pullPolicy: Always  # Always pull for development
+  tag: "dev"
+
+# Minimal replicas for development
+web:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  autoscaling:
+    enabled: false
+
+sidekiq:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  autoscaling:
+    enabled: false
+
+runner:
+  name: k8s-runner-dev
+  concurrentJobs: 2
+  executor: kubernetes
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+# Minimal PostgreSQL for development
+postgresql:
+  enabled: true
+  auth:
+    username: kodecd
+    password: "dev-password"  # Change this!
+    database: kodecd_development
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+# Minimal Redis for development
+redis:
+  enabled: true
+  auth:
+    enabled: false  # Disabled for easier dev access
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 512Mi
+
+# Small persistent volumes for development
+persistence:
+  storageClass: ""  # Use default storage class
+  gitData:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteOnce
+  artifacts:
+    enabled: true
+    size: 10Gi
+    accessMode: ReadWriteOnce
+  cache:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteOnce
+  storage:
+    enabled: true
+    size: 2Gi
+    accessMode: ReadWriteOnce
+  runnerCache:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteOnce
+
+# No Ingress for development (use port-forward)
+ingress:
+  enabled: false
+
+# Use ClusterIP and port-forward
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+# Secrets - Generate these for your dev environment
+secrets:
+  secretKeyBase: ""  # REQUIRED: Generate with openssl rand -hex 64
+  runnerToken: ""    # REQUIRED: Generate with openssl rand -hex 32
+
+# Application configuration
+config:
+  railsEnv: development
+  logLevel: debug
+
+  # SMTP disabled for development
+  smtp:
+    enabled: false
+
+  # All features enabled for development
+  features:
+    teamsEnabled: true
+    wikiEnabled: true
+    registrationEnabled: true
+
+# Relaxed security for development
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+
+# Less aggressive health checks for development
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: kodecd-dev
+
+# No specific node requirements for development
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Debug annotations
+podAnnotations:
+  debug: "true"
+  environment: "development"
+
+# Init containers enabled
+initContainers:
+  enabled: true
