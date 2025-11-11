@@ -1,0 +1,26 @@
+---
+- name: Create .env file for Rails
+  template:
+    src: "{{ kodecd_install_dir }}/assembly_line/templates/config/env.j2"
+    dest: /opt/kodecd/.env.production
+    owner: kodecd
+    group: kodecd
+    mode: '0600'
+  vars:
+    rails_env: "{{ kodecd_config.rails_env | default('production') }}"
+    secret_key_base: "{{ kodecd_config.secret_key_base }}"
+    database_url: "postgresql://{{ kodecd_config.database_username }}:{{ kodecd_config.database_password }}@{{ kodecd_config.database_host }}:{{ kodecd_config.database_port }}/{{ kodecd_config.database_name }}"
+    redis_url: "redis://{% if kodecd_config.redis_password %}:{{ kodecd_config.redis_password }}@{% endif %}{{ kodecd_config.redis_host }}:{{ kodecd_config.redis_port }}/{{ kodecd_config.redis_db }}"
+
+- name: Create runner configuration
+  template:
+    src: "{{ kodecd_install_dir }}/assembly_line/templates/config/runner-config.toml.j2"
+    dest: /etc/kodecd/runner-config.toml
+    owner: kodecd
+    group: kodecd
+    mode: '0600'
+  vars:
+    runner_token: "{{ kodecd_config.runner_token }}"
+    runner_concurrent: "{{ kodecd_config.runner_concurrent_jobs | default(4) }}"
+    runner_executor: "{{ kodecd_config.runner_executor | default('docker') }}"
+    external_url: "{{ kodecd_config.external_url }}"

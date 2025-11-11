@@ -1,0 +1,40 @@
+[Unit]
+Description=KodeCD CI/CD Runner
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=kodecd
+Group=kodecd
+WorkingDirectory=/opt/kodecd
+
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+# Note: This assumes the runner binary is built and placed in /opt/kodecd/bin/runner
+ExecStart=/opt/kodecd/bin/runner run --config /etc/kodecd/runner-config.toml
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=8192
+
+# Security
+NoNewPrivileges=false
+PrivateTmp=yes
+
+# Docker access
+SupplementaryGroups=docker
+
+# Logging
+StandardOutput=append:/var/log/kodecd/runner.log
+StandardError=append:/var/log/kodecd/runner-error.log
+SyslogIdentifier=kodecd-runner
+
+[Install]
+WantedBy=multi-user.target

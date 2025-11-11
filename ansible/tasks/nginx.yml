@@ -1,0 +1,43 @@
+---
+- name: Remove default nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Create nginx configuration for KodeCD
+  template:
+    src: "{{ kodecd_install_dir }}/assembly_line/templates/nginx/kodecd.conf.j2"
+    dest: /etc/nginx/sites-available/kodecd.conf
+    owner: root
+    group: root
+    mode: '0644'
+  vars:
+    external_url: "{{ kodecd_config.external_url | default('http://localhost') }}"
+    nginx_client_max_body_size: "{{ kodecd_config.nginx_client_max_body_size | default('250m') }}"
+    nginx_ssl_certificate: "{{ kodecd_config.nginx_ssl_certificate | default('') }}"
+    nginx_ssl_certificate_key: "{{ kodecd_config.nginx_ssl_certificate_key | default('') }}"
+
+- name: Enable nginx site
+  file:
+    src: /etc/nginx/sites-available/kodecd.conf
+    dest: /etc/nginx/sites-enabled/kodecd.conf
+    state: link
+
+- name: Generate self-signed SSL certificate if none provided
+  command: >
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -keyout /etc/ssl/private/kodecd.key
+    -out /etc/ssl/certs/kodecd.crt
+    -subj "/C=US/ST=State/L=City/O=KodeCD/CN={{ kodecd_config.external_url | default('localhost') | regex_replace('^https?://', '') }}"
+  args:
+    creates: /etc/ssl/certs/kodecd.crt
+  when: kodecd_config.nginx_ssl_certificate is not defined or kodecd_config.nginx_ssl_certificate == ""
+
+- name: Test nginx configuration
+  command: nginx -t
+  changed_when: false
+
+- name: Reload nginx
+  systemd:
+    name: nginx
+    state: reloaded

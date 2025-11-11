@@ -1,0 +1,140 @@
+upstream kodecd_web {
+    server 127.0.0.1:3000 fail_timeout=0;
+}
+
+# Rate limiting
+limit_req_zone $binary_remote_addr zone=kodecd_api:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=kodecd_web:10m rate=30r/s;
+limit_conn_zone $binary_remote_addr zone=kodecd_conn:10m;
+
+# HTTP server - redirect to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ external_url | regex_replace('^https?://', '') }};
+
+    # Let's Encrypt verification
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+}
+
+# HTTPS server
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name {{ external_url | regex_replace('^https?://', '') }};
+
+    # SSL configuration
+    {% if nginx_ssl_certificate %}
+    ssl_certificate {{ nginx_ssl_certificate }};
+    ssl_certificate_key {{ nginx_ssl_certificate_key }};
+    {% else %}
+    # Self-signed certificate (replace with real certificate)
+    ssl_certificate /etc/ssl/certs/kodecd.crt;
+    ssl_certificate_key /etc/ssl/private/kodecd.key;
+    {% endif %}
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Client upload size
+    client_max_body_size {{ nginx_client_max_body_size | default('250m') }};
+
+    # Timeouts
+    proxy_connect_timeout 600;
+    proxy_send_timeout 600;
+    proxy_read_timeout 600;
+    send_timeout 600;
+
+    # Access and error logs
+    access_log /var/log/nginx/kodecd_access.log;
+    error_log /var/log/nginx/kodecd_error.log;
+
+    # Root location
+    location / {
+        limit_req zone=kodecd_web burst=20 nodelay;
+        limit_conn kodecd_conn 10;
+
+        proxy_pass http://kodecd_web;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # API endpoints (stricter rate limiting)
+    location /api/ {
+        limit_req zone=kodecd_api burst=5 nodelay;
+        limit_conn kodecd_conn 5;
+
+        proxy_pass http://kodecd_web;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+    }
+
+    # Git HTTP endpoints
+    location ~ ^.*\.git/.*$ {
+        # Larger client body size for git operations
+        client_max_body_size 0;
+
+        proxy_pass http://kodecd_web;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Git-specific timeouts
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300;
+    }
+
+    # Static files
+    location ~ ^/(assets|packs)/ {
+        root /opt/kodecd/public;
+        gzip_static on;
+        expires max;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Health check endpoint
+    location /health {
+        proxy_pass http://kodecd_web;
+        access_log off;
+    }
+
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+}

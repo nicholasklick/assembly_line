@@ -1,0 +1,58 @@
+---
+- name: Deploy KodeCD Production Stack
+  hosts: all
+  become: yes
+  vars:
+    kodecd_install_dir: /opt/kodecd
+    kodecd_config_dir: /etc/kodecd
+    kodecd_data_dir: /var/opt/kodecd
+    kodecd_log_dir: /var/log/kodecd
+    kodecd_user: kodecd
+    kodecd_group: kodecd
+
+  tasks:
+    - name: Load configuration
+      include_vars:
+        file: "{{ kodecd_config_dir }}/kodecd.conf"
+        name: kodecd_config
+      ignore_errors: yes
+
+    - name: Create systemd service files
+      import_tasks: tasks/systemd.yml
+
+    - name: Configure nginx
+      import_tasks: tasks/nginx.yml
+
+    - name: Setup environment files
+      import_tasks: tasks/environment.yml
+
+    - name: Configure logrotate
+      import_tasks: tasks/logrotate.yml
+
+- name: Verify installation
+  hosts: all
+  become: yes
+  tasks:
+    - name: Check services are enabled
+      systemd:
+        name: "{{ item }}"
+        enabled: yes
+      loop:
+        - kodecd-web
+        - kodecd-sidekiq
+        - kodecd-runner
+        - nginx
+        - postgresql
+        - redis
+
+    - name: Display installation summary
+      debug:
+        msg: |
+          KodeCD has been deployed successfully!
+
+          Services:
+            - Web: systemctl status kodecd-web
+            - Sidekiq: systemctl status kodecd-sidekiq
+            - Runner: systemctl status kodecd-runner
+
+          Configuration: {{ kodecd_config_dir }}/kodecd.conf

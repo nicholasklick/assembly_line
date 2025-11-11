@@ -1,0 +1,46 @@
+[Unit]
+Description=KodeCD Background Jobs (Sidekiq)
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User=kodecd
+Group=kodecd
+WorkingDirectory=/opt/kodecd
+
+Environment="RAILS_ENV=production"
+Environment="RAILS_LOG_TO_STDOUT=true"
+Environment="PATH=/opt/kodecd/.rbenv/shims:/opt/kodecd/.rbenv/bin:/usr/local/bin:/usr/bin:/bin"
+
+ExecStart=/opt/kodecd/.rbenv/shims/bundle exec sidekiq -C config/sidekiq.yml
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Graceful shutdown
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/kodecd /var/opt/kodecd /var/log/kodecd
+
+# Logging
+StandardOutput=append:/var/log/kodecd/sidekiq.log
+StandardError=append:/var/log/kodecd/sidekiq-error.log
+SyslogIdentifier=kodecd-sidekiq
+
+[Install]
+WantedBy=multi-user.target

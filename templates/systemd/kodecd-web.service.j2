@@ -1,0 +1,41 @@
+[Unit]
+Description=KodeCD Web Application (Puma)
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=kodecd
+Group=kodecd
+WorkingDirectory=/opt/kodecd
+
+Environment="RAILS_ENV=production"
+Environment="RAILS_LOG_TO_STDOUT=true"
+Environment="PATH=/opt/kodecd/.rbenv/shims:/opt/kodecd/.rbenv/bin:/usr/local/bin:/usr/bin:/bin"
+
+ExecStart=/opt/kodecd/.rbenv/shims/bundle exec puma -C config/puma.rb
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/kodecd /var/opt/kodecd /var/log/kodecd
+
+# Logging
+StandardOutput=append:/var/log/kodecd/web.log
+StandardError=append:/var/log/kodecd/web-error.log
+SyslogIdentifier=kodecd-web
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,153 @@
+# KodeCD Configuration File
+# Central configuration for your KodeCD installation
+# Copy this file to /etc/kodecd/kodecd.conf and customize
+
+################################################################################
+# REQUIRED SETTINGS
+################################################################################
+
+# External URL for your KodeCD instance
+# This should be the public URL users will access
+external_url = "https://kodecd.example.com"
+
+################################################################################
+# RAILS APPLICATION SETTINGS
+################################################################################
+
+# Rails environment (production, staging, development)
+rails_env = "production"
+
+# Secret key base (generate with: openssl rand -hex 64)
+secret_key_base = "CHANGE_ME_TO_RANDOM_STRING"
+
+# Database configuration
+database_host = "localhost"
+database_port = 5432
+database_name = "kodecd_production"
+database_username = "kodecd"
+database_password = "CHANGE_ME"
+database_pool = 25
+
+################################################################################
+# REDIS SETTINGS
+################################################################################
+
+redis_host = "localhost"
+redis_port = 6379
+redis_password = ""
+redis_db = 0
+
+################################################################################
+# NGINX SETTINGS
+################################################################################
+
+# Enable/disable nginx (set to false if using external nginx)
+nginx_enabled = true
+nginx_listen_port = 80
+nginx_listen_https_port = 443
+
+# SSL Certificate paths (leave empty for self-signed)
+nginx_ssl_certificate = ""
+nginx_ssl_certificate_key = ""
+
+# Enable Let's Encrypt
+nginx_letsencrypt_enabled = false
+nginx_letsencrypt_email = "admin@example.com"
+
+# Client max body size (for large file uploads)
+nginx_client_max_body_size = "250m"
+
+################################################################################
+# SIDEKIQ SETTINGS
+################################################################################
+
+sidekiq_enabled = true
+sidekiq_concurrency = 25
+sidekiq_queue_namespace = "kodecd"
+
+################################################################################
+# RUNNER SETTINGS
+################################################################################
+
+# Enable the built-in runner
+runner_enabled = true
+runner_token = "CHANGE_ME_TO_SECURE_TOKEN"
+runner_concurrent_jobs = 4
+
+# Runner executor type (docker, shell, kubernetes)
+runner_executor = "docker"
+
+################################################################################
+# GIT STORAGE SETTINGS
+################################################################################
+
+# Directory for git repositories
+git_data_dir = "/var/opt/kodecd/git-data"
+
+# Directory for artifacts and caches
+artifacts_dir = "/var/opt/kodecd/artifacts"
+cache_dir = "/var/opt/kodecd/cache"
+
+################################################################################
+# MAIL SETTINGS
+################################################################################
+
+# Enable email notifications
+mail_enabled = true
+smtp_address = "smtp.example.com"
+smtp_port = 587
+smtp_username = "notifications@example.com"
+smtp_password = "CHANGE_ME"
+smtp_domain = "example.com"
+smtp_authentication = "plain"
+smtp_enable_starttls_auto = true
+mail_from = "kodecd@example.com"
+
+################################################################################
+# BACKUP SETTINGS
+################################################################################
+
+# Backup directory
+backup_path = "/var/opt/kodecd/backups"
+backup_keep_time = 604800  # 7 days in seconds
+
+################################################################################
+# MONITORING & LOGGING
+################################################################################
+
+# Log directory
+log_directory = "/var/log/kodecd"
+log_level = "info"
+
+# Prometheus metrics
+prometheus_enabled = false
+prometheus_listen_address = "localhost:9090"
+
+################################################################################
+# ADVANCED SETTINGS
+################################################################################
+
+# Number of web workers
+puma_workers = 2
+puma_threads_min = 5
+puma_threads_max = 5
+
+# Enable/disable specific features
+features_teams_enabled = true
+features_epics_enabled = true
+features_wiki_enabled = true
+features_security_scanning_enabled = true
+
+# Rate limiting
+rate_limit_enabled = true
+rate_limit_requests_per_minute = 60
+
+# Session timeout (in seconds)
+session_timeout = 3600
+
+################################################################################
+# CUSTOM SETTINGS
+################################################################################
+
+# Add any custom environment variables here
+# custom_env_VAR_NAME = "value"

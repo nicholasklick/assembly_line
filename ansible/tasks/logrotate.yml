@@ -1,0 +1,34 @@
+---
+- name: Create logrotate configuration for KodeCD
+  copy:
+    dest: /etc/logrotate.d/kodecd
+    content: |
+      /var/log/kodecd/*.log {
+          daily
+          missingok
+          rotate 14
+          compress
+          delaycompress
+          notifempty
+          copytruncate
+          su kodecd kodecd
+      }
+
+      /var/log/nginx/kodecd_*.log {
+          daily
+          missingok
+          rotate 14
+          compress
+          delaycompress
+          notifempty
+          create 0640 www-data adm
+          sharedscripts
+          postrotate
+              if [ -f /var/run/nginx.pid ]; then
+                  kill -USR1 `cat /var/run/nginx.pid`
+              fi
+          endscript
+      }
+    owner: root
+    group: root
+    mode: '0644'
