@@ -1,0 +1,55 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+LICENSE
+CHANGELOG*
+docs/
+
+# Development files
+.env*
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test files
+spec/
+test/
+coverage/
+.rspec
+
+# Logs
+log/*
+*.log
+tmp/
+
+# Storage
+storage/*
+public/uploads/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Ruby
+*.gem
+.bundle/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Assembly line
+assembly_line/
+
+# CI/CD
+.github/
+.gitlab-ci.yml

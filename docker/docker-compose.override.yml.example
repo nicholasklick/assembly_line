@@ -1,0 +1,83 @@
+# Docker Compose Override Example
+# Copy to docker-compose.override.yml to customize your setup
+# This file is automatically loaded by docker-compose
+
+version: '3.8'
+
+services:
+  # Development: Enable hot reload
+  # web:
+  #   command: bundle exec rails server -b 0.0.0.0
+  #   volumes:
+  #     - ../../:/app
+  #   environment:
+  #     RAILS_ENV: development
+
+  # Custom database port
+  # postgres:
+  #   ports:
+  #     - "5433:5432"
+
+  # Custom redis port
+  # redis:
+  #   ports:
+  #     - "6380:6379"
+
+  # Expose web directly (bypass nginx)
+  # web:
+  #   ports:
+  #     - "3001:3000"
+
+  # Add pgAdmin for database management
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@kodecd.local
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #   ports:
+  #     - "5050:80"
+  #   networks:
+  #     - kodecd-network
+
+  # Add Redis Commander
+  # redis-commander:
+  #   image: rediscommander/redis-commander:latest
+  #   environment:
+  #     REDIS_HOSTS: local:redis:6379
+  #   ports:
+  #     - "8081:8081"
+  #   networks:
+  #     - kodecd-network
+
+  # Traefik reverse proxy (instead of nginx)
+  # traefik:
+  #   image: traefik:v2.10
+  #   command:
+  #     - "--api.insecure=true"
+  #     - "--providers.docker=true"
+  #     - "--providers.docker.exposedbydefault=false"
+  #     - "--entrypoints.web.address=:80"
+  #     - "--entrypoints.websecure.address=:443"
+  #     - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+  #     - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+  #     - "--certificatesresolvers.letsencrypt.acme.email=admin@example.com"
+  #     - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "8080:8080"
+  #   volumes:
+  #     - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  #     - "traefik-certs:/letsencrypt"
+  #   networks:
+  #     - kodecd-network
+  #
+  # web:
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.kodecd.rule=Host(`kodecd.example.com`)"
+  #     - "traefik.http.routers.kodecd.entrypoints=websecure"
+  #     - "traefik.http.routers.kodecd.tls.certresolver=letsencrypt"
+
+# volumes:
+#   traefik-certs:

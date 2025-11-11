@@ -1,0 +1,184 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: kodecd-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kodecd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kodecd_password}
+      POSTGRES_DB: ${POSTGRES_DB:-kodecd_production}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kodecd"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kodecd-network
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: kodecd-redis
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kodecd-network
+
+  # Rails Web Application
+  web:
+    build:
+      context: ../..
+      dockerfile: assembly_line/docker/Dockerfile.web
+      args:
+        RAILS_ENV: production
+    container_name: kodecd-web
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kodecd}:${POSTGRES_PASSWORD:-kodecd_password}@postgres:5432/${POSTGRES_DB:-kodecd_production}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      RAILS_SERVE_STATIC_FILES: "true"
+      RAILS_LOG_TO_STDOUT: "true"
+      EXTERNAL_URL: ${EXTERNAL_URL:-http://localhost}
+    volumes:
+      - git-data:/var/opt/kodecd/git-data
+      - artifacts-data:/var/opt/kodecd/artifacts
+      - cache-data:/var/opt/kodecd/cache
+      - storage-data:/var/opt/kodecd/storage
+      - ./config/kodecd.env:/app/.env.production:ro
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - kodecd-network
+
+  # Sidekiq Background Jobs
+  sidekiq:
+    build:
+      context: ../..
+      dockerfile: assembly_line/docker/Dockerfile.web
+      args:
+        RAILS_ENV: production
+    container_name: kodecd-sidekiq
+    restart: always
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kodecd}:${POSTGRES_PASSWORD:-kodecd_password}@postgres:5432/${POSTGRES_DB:-kodecd_production}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      RAILS_LOG_TO_STDOUT: "true"
+    volumes:
+      - git-data:/var/opt/kodecd/git-data
+      - artifacts-data:/var/opt/kodecd/artifacts
+      - cache-data:/var/opt/kodecd/cache
+      - storage-data:/var/opt/kodecd/storage
+      - ./config/kodecd.env:/app/.env.production:ro
+    networks:
+      - kodecd-network
+
+  # CI/CD Runner
+  runner:
+    build:
+      context: ../..
+      dockerfile: assembly_line/docker/Dockerfile.runner
+    container_name: kodecd-runner
+    restart: always
+    privileged: true
+    depends_on:
+      - web
+    environment:
+      KODECD_URL: http://web:3000
+      RUNNER_TOKEN: ${RUNNER_TOKEN}
+      RUNNER_NAME: ${RUNNER_NAME:-docker-runner-1}
+      RUNNER_EXECUTOR: docker
+      RUNNER_CONCURRENT_JOBS: ${RUNNER_CONCURRENT_JOBS:-4}
+      DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-config:/etc/kodecd-runner
+      - runner-cache:/cache
+      - ./config/runner-config.toml:/etc/kodecd-runner/config.toml:ro
+    networks:
+      - kodecd-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: kodecd-nginx
+    restart: always
+    depends_on:
+      - web
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./templates/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./templates/kodecd.conf:/etc/nginx/conf.d/default.conf:ro
+      - ssl-certs:/etc/nginx/ssl
+      - nginx-cache:/var/cache/nginx
+    environment:
+      NGINX_HOST: ${EXTERNAL_HOST:-localhost}
+      NGINX_PORT: 80
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - kodecd-network
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  git-data:
+    driver: local
+  artifacts-data:
+    driver: local
+  cache-data:
+    driver: local
+  storage-data:
+    driver: local
+  runner-config:
+    driver: local
+  runner-cache:
+    driver: local
+  ssl-certs:
+    driver: local
+  nginx-cache:
+    driver: local
+
+networks:
+  kodecd-network:
+    driver: bridge

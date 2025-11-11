@@ -1,0 +1,88 @@
+# KodeCD Web Application Dockerfile
+FROM ruby:3.4.2-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    build-base \
+    postgresql-dev \
+    git \
+    nodejs \
+    npm \
+    tzdata \
+    libxml2-dev \
+    libxslt-dev \
+    sqlite-dev \
+    cmake \
+    openssl-dev
+
+WORKDIR /app
+
+# Copy Gemfile and install Ruby dependencies
+COPY Gemfile Gemfile.lock ./
+RUN bundle config set --local deployment 'true' && \
+    bundle config set --local without 'development test' && \
+    bundle install --jobs 4 --retry 3
+
+# Copy package.json and install Node dependencies
+COPY frontend/package*.json ./frontend/
+RUN npm --prefix frontend ci --omit=dev
+
+# Copy application code
+COPY . .
+
+# Build frontend assets
+ENV NODE_ENV=production
+RUN npm --prefix frontend run build
+
+# Precompile Rails assets (if using asset pipeline)
+ARG RAILS_ENV=production
+ENV RAILS_ENV=${RAILS_ENV}
+ENV SECRET_KEY_BASE=dummy_secret_for_asset_compilation
+RUN bundle exec rails assets:precompile || true
+
+# Final production image
+FROM ruby:3.4.2-alpine
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    postgresql-client \
+    tzdata \
+    libxml2 \
+    libxslt \
+    sqlite-libs \
+    git \
+    curl \
+    bash
+
+WORKDIR /app
+
+# Copy gems from builder
+COPY --from=builder /usr/local/bundle /usr/local/bundle
+
+# Copy application files
+COPY --from=builder /app /app
+
+# Create directories for data
+RUN mkdir -p \
+    /var/opt/kodecd/git-data \
+    /var/opt/kodecd/artifacts \
+    /var/opt/kodecd/cache \
+    /var/opt/kodecd/storage \
+    tmp/pids
+
+# Create non-root user
+RUN addgroup -g 1000 kodecd && \
+    adduser -D -u 1000 -G kodecd kodecd && \
+    chown -R kodecd:kodecd /app /var/opt/kodecd
+
+USER kodecd
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Start server
+CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]

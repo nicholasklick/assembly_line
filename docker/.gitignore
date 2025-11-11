@@ -1,0 +1,20 @@
+# Environment
+.env
+docker-compose.override.yml
+
+# Configuration
+config/kodecd.env
+config/runner-config.toml
+
+# SSL certificates
+ssl/
+*.crt
+*.key
+*.pem
+
+# Backups
+backups/
+
+# Logs
+logs/
+*.log

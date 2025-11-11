@@ -1,0 +1,25 @@
+# KodeCD Runner Configuration
+
+concurrent = 4
+
+[[runners]]
+  name = "docker-runner-1"
+  url = "http://web:3000"
+  token = "YOUR_RUNNER_TOKEN"
+  executor = "docker"
+
+  [runners.docker]
+    tls_verify = false
+    image = "ruby:3.4.2-alpine"
+    privileged = false
+    disable_cache = false
+    volumes = ["/cache", "/var/run/docker.sock:/var/run/docker.sock"]
+    shm_size = 0
+    network_mode = "kodecd-network"
+
+  [runners.cache]
+    Type = "local"
+    Shared = true
+
+    [runners.cache.local]
+      BasePath = "/cache"

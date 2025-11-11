@@ -1,0 +1,40 @@
+# KodeCD Runner Dockerfile
+FROM ruby:3.4.2-alpine
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    docker-cli \
+    git \
+    bash \
+    curl \
+    ca-certificates \
+    openssh-client
+
+WORKDIR /opt/kodecd-runner
+
+# Copy runner source (if you have a dedicated runner app)
+# For now, we'll use a simple script-based runner
+COPY assembly_line/docker/scripts/runner.sh /opt/kodecd-runner/runner.sh
+RUN chmod +x /opt/kodecd-runner/runner.sh
+
+# Create directories
+RUN mkdir -p \
+    /etc/kodecd-runner \
+    /cache \
+    /builds && \
+    chmod 777 /cache /builds
+
+# Create non-root user but allow docker access
+RUN addgroup -g 1000 kodecd && \
+    adduser -D -u 1000 -G kodecd kodecd && \
+    addgroup kodecd docker || true
+
+# Health check
+HEALTHCHECK --interval=60s --timeout=10s --retries=3 \
+  CMD pgrep -f "runner.sh" || exit 1
+
+# Run as kodecd user
+USER kodecd
+
+# Start runner
+CMD ["/opt/kodecd-runner/runner.sh"]
