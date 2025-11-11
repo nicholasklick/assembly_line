@@ -247,8 +247,8 @@ Component | Description
 
 2. **Clone Repository**
    ```bash
-   git clone https://github.com/yourusername/kodecd.git
-   cd kodecd/assembly_line/docker
+   git clone https://github.com/nicholasklick/assembly_line.git
+   cd assembly_line/docker
    ```
 
 3. **Configure**
@@ -282,7 +282,7 @@ Component | Description
 
 3. **Install Chart**
    ```bash
-   cd kodecd/assembly_line/helm
+   cd assembly_line/helm
    helm install kodecd ./kodecd \
      --namespace kodecd \
      --set secrets.secretKeyBase=$SECRET_KEY_BASE \
@@ -422,7 +422,7 @@ sudo kodecd-ctl upgrade
 ## 🆘 Support
 
 - **Documentation:** [docs.kodecd.com](https://docs.kodecd.com)
-- **Issues:** [GitHub Issues](https://github.com/yourusername/kodecd/issues)
+- **Issues:** [GitHub Issues](https://github.com/nicholasklick/assembly_line/issues)
 - **Community:** [KodeCD Slack](https://kodecd.slack.com)
 - **Email:** support@kodecd.com
 

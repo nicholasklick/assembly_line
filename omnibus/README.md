@@ -50,7 +50,7 @@ The KodeCD installer automatically sets up:
 
 ```bash
 # Download the installer
-curl -sSL https://github.com/yourusername/kodecd/raw/main/assembly_line/install.sh -o install.sh
+curl -sSL https://github.com/nicholasklick/assembly_line/raw/main/install.sh -o install.sh
 
 # Make it executable
 chmod +x install.sh
@@ -484,11 +484,11 @@ sudo userdel kodecd
 - [Documentation](https://docs.kodecd.com)
 - [API Reference](https://docs.kodecd.com/api)
 - [Community Forum](https://community.kodecd.com)
-- [Issue Tracker](https://github.com/yourusername/kodecd/issues)
+- [Issue Tracker](https://github.com/nicholasklick/assembly_line/issues)
 
 ## 🤝 Support
 
-- GitHub Issues: https://github.com/yourusername/kodecd/issues
+- GitHub Issues: https://github.com/nicholasklick/assembly_line/issues
 - Community Slack: https://kodecd.slack.com
 - Email: support@kodecd.com
 

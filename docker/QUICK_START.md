@@ -6,8 +6,8 @@
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/kodecd.git
-cd kodecd/assembly_line/docker
+git clone https://github.com/nicholasklick/assembly_line.git
+cd assembly_line/docker
 
 # 2. Copy and edit configuration
 cp .env.example .env
@@ -33,8 +33,8 @@ sudo usermod -aG docker $USER
 # Log out and back in
 
 # 3. Clone and setup
-git clone https://github.com/yourusername/kodecd.git
-cd kodecd/assembly_line/docker
+git clone https://github.com/nicholasklick/assembly_line.git
+cd assembly_line/docker
 
 # 4. Configure
 cp .env.example .env
@@ -212,5 +212,5 @@ See [README.md](README.md) for full documentation.
 
 - Run `./kodecd-docker help` for command reference
 - Check logs: `./kodecd-docker logs`
-- GitHub Issues: https://github.com/yourusername/kodecd/issues
+- GitHub Issues: https://github.com/nicholasklick/assembly_line/issues
 - Documentation: https://docs.kodecd.com

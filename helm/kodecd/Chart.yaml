@@ -12,7 +12,7 @@ keywords:
   - gitlab-alternative
 home: https://kodecd.com
 sources:
-  - https://github.com/yourusername/kodecd
+  - https://github.com/nicholasklick/assembly_line
 maintainers:
   - name: KodeCD Team
     email: support@kodecd.com

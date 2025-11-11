@@ -15,8 +15,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/kodecd.git
-cd kodecd/assembly_line/docker
+git clone https://github.com/nicholasklick/assembly_line.git
+cd assembly_line/docker
 
 # Install and start
 ./kodecd-docker install
@@ -29,8 +29,8 @@ cd kodecd/assembly_line/docker
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/kodecd.git
-cd kodecd/assembly_line/docker
+git clone https://github.com/nicholasklick/assembly_line.git
+cd assembly_line/docker
 ```
 
 ### 2. Configure Environment
@@ -402,8 +402,8 @@ curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
 
 # 3. Clone and configure
-git clone https://github.com/yourusername/kodecd.git
-cd kodecd/assembly_line/docker
+git clone https://github.com/nicholasklick/assembly_line.git
+cd assembly_line/docker
 cp .env.example .env
 vim .env  # Update configuration
 
@@ -519,11 +519,11 @@ docker rmi $(docker images 'kodecd*' -q)
 - [Docker Documentation](https://docs.docker.com)
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [KodeCD Documentation](https://docs.kodecd.com)
-- [Issue Tracker](https://github.com/yourusername/kodecd/issues)
+- [Issue Tracker](https://github.com/nicholasklick/assembly_line/issues)
 
 ## 🆘 Support
 
-- GitHub Issues: https://github.com/yourusername/kodecd/issues
+- GitHub Issues: https://github.com/nicholasklick/assembly_line/issues
 - Community Slack: https://kodecd.slack.com
 - Email: support@kodecd.com
 

@@ -87,7 +87,7 @@
 
 For more information about KodeCD, visit:
   - Documentation: https://docs.kodecd.com
-  - GitHub: https://github.com/yourusername/kodecd
+  - GitHub: https://github.com/nicholasklick/assembly_line
   - Support: support@kodecd.com
 
 Thank you for using KodeCD!

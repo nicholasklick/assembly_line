@@ -248,7 +248,7 @@ kubectl delete pvc -n kodecd -l app.kubernetes.io/instance=kodecd
 
 ## Support
 
-- [GitHub Issues](https://github.com/yourusername/kodecd/issues)
+- [GitHub Issues](https://github.com/nicholasklick/assembly_line/issues)
 - [Documentation](https://docs.kodecd.com)
 - Email: support@kodecd.com
 

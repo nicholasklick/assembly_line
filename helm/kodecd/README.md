@@ -482,7 +482,7 @@ For a complete list of parameters, see `values.yaml`.
 ## Support
 
 - Documentation: https://docs.kodecd.com
-- GitHub Issues: https://github.com/yourusername/kodecd/issues
+- GitHub Issues: https://github.com/nicholasklick/assembly_line/issues
 - Email: support@kodecd.com
 
 ## License

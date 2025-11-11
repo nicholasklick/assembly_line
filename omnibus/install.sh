@@ -228,13 +228,13 @@ download_kodecd() {
     if [ "$KODECD_VERSION" = "latest" ]; then
         # Clone from git (for development)
         if [ ! -d ".git" ]; then
-            git clone https://github.com/yourusername/kodecd.git .
+            git clone https://github.com/nicholasklick/assembly_line.git .
         else
             git pull
         fi
     else
         # Download release tarball
-        wget -O kodecd.tar.gz "https://github.com/yourusername/kodecd/archive/refs/tags/v${KODECD_VERSION}.tar.gz"
+        wget -O kodecd.tar.gz "https://github.com/nicholasklick/assembly_line/archive/refs/tags/v${KODECD_VERSION}.tar.gz"
         tar -xzf kodecd.tar.gz --strip-components=1
         rm kodecd.tar.gz
     fi

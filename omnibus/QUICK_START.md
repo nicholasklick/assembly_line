@@ -123,7 +123,7 @@ If you want to install manually for development:
 ```bash
 # Clone repository
 cd /opt
-sudo git clone https://github.com/yourusername/kodecd.git
+sudo git clone https://github.com/nicholasklick/assembly_line.git
 cd kodecd
 
 # Run setup scripts
